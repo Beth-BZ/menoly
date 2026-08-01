@@ -1,5 +1,6 @@
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { winbackQueue } from "./queue/winback-queue";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -82,10 +83,16 @@ async function main() {
     });
 
     if (!existing) {
-      await prisma.winbackCampaign.create({
+      const campaign = await prisma.winbackCampaign.create({
         data: { customerId: customer.customerId },
       });
-      console.log(`Created win-back campaign for ${customer.name}`);
+      await winbackQueue.add("send-winback-email", {
+        campaignId: campaign.id,
+        customerId: customer.customerId,
+        email: customer.email,
+        name: customer.name,
+      });
+      console.log(`Created + queued win-back campaign for ${customer.name}`);
     }
   }
 }

@@ -74,7 +74,20 @@ async function main() {
       monetary: `$${s.monetary}`,
       needsWinback: s.needsWinback ? "⚠️ YES" : "no",
     }))
-  );
+  );const flagged = scores.filter((s) => s.needsWinback);
+
+  for (const customer of flagged) {
+    const existing = await prisma.winbackCampaign.findFirst({
+      where: { customerId: customer.customerId, status: "pending" },
+    });
+
+    if (!existing) {
+      await prisma.winbackCampaign.create({
+        data: { customerId: customer.customerId },
+      });
+      console.log(`Created win-back campaign for ${customer.name}`);
+    }
+  }
 }
 
 main()

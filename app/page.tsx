@@ -1,65 +1,79 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+
+interface CustomerRow {
+  id: string;
+  name: string | null;
+  email: string;
+  recencyDays: number | null;
+  frequency: number;
+  monetary: number;
+  campaignStatus: string;
+}
+
+export default function Dashboard() {
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/customers")
+      .then((res) => res.json())
+      .then((data) => {
+        setCustomers(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-8">Loading...</div>;
+
+  const atRiskCount = customers.filter(
+    (c) => c.campaignStatus !== "none"
+  ).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="p-8 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-2">Menoly Dashboard</h1>
+      <p className="text-gray-500 mb-6">
+        {customers.length} customers · {atRiskCount} flagged for win-back
+      </p>
+
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b text-left text-sm text-gray-500">
+            <th className="py-2">Name</th>
+            <th className="py-2">Email</th>
+            <th className="py-2">Recency</th>
+            <th className="py-2">Frequency</th>
+            <th className="py-2">Monetary</th>
+            <th className="py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customers.map((c) => (
+            <tr key={c.id} className="border-b">
+              <td className="py-2">{c.name}</td>
+              <td className="py-2">{c.email}</td>
+              <td className="py-2">
+                {c.recencyDays !== null ? `${c.recencyDays}d` : "—"}
+              </td>
+              <td className="py-2">{c.frequency}</td>
+              <td className="py-2">${c.monetary}</td>
+              <td className="py-2">
+                {c.campaignStatus === "pending" && (
+                  <span className="text-orange-600">⚠️ Win-back pending</span>
+                )}
+                {c.campaignStatus === "sent" && (
+                  <span className="text-blue-600">✉️ Sent</span>
+                )}
+                {c.campaignStatus === "none" && (
+                  <span className="text-gray-400">Healthy</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </main>
   );
 }

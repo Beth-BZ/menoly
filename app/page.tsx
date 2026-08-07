@@ -12,6 +12,17 @@ interface CustomerRow {
   campaignStatus: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  stock: number;
+}
+
+interface BestSeller {
+  name: string;
+  quantitySold: number;
+}
+
 type SortKey = "recencyDays" | "frequency" | "monetary";
 
 function pulseColor(days: number | null) {
@@ -33,6 +44,10 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("recencyDays");
   const [sortDesc, setSortDesc] = useState(true);
+  const [inventory, setInventory] = useState<{ lowStock: Product[]; bestSellers: BestSeller[] }>({
+    lowStock: [],
+    bestSellers: [],
+  });
 
   function loadCustomers() {
     setLoading(true);
@@ -46,6 +61,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadCustomers();
+    fetch("/api/inventory")
+      .then((res) => res.json())
+      .then(setInventory);
   }, []);
 
   async function runAnalysis() {
@@ -136,22 +154,13 @@ export default function Dashboard() {
           <thead>
             <tr className="border-b border-[var(--border)] text-left">
               <th className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium">Customer</th>
-              <th
-                className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none"
-                onClick={() => toggleSort("recencyDays")}
-              >
+              <th className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none" onClick={() => toggleSort("recencyDays")}>
                 Recency {sortKey === "recencyDays" && (sortDesc ? "↓" : "↑")}
               </th>
-              <th
-                className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none"
-                onClick={() => toggleSort("frequency")}
-              >
+              <th className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none" onClick={() => toggleSort("frequency")}>
                 Orders {sortKey === "frequency" && (sortDesc ? "↓" : "↑")}
               </th>
-              <th
-                className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none"
-                onClick={() => toggleSort("monetary")}
-              >
+              <th className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium cursor-pointer select-none" onClick={() => toggleSort("monetary")}>
                 Spent {sortKey === "monetary" && (sortDesc ? "↓" : "↑")}
               </th>
               <th className="py-3 px-4 text-xs text-[var(--text-soft)] font-medium">Status</th>
@@ -184,6 +193,27 @@ export default function Dashboard() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mt-8">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+          <p className="text-xs text-[var(--text-soft)] mb-3">Low Stock</p>
+          {inventory.lowStock.map((p) => (
+            <div key={p.id} className="flex justify-between py-1.5 text-sm">
+              <span>{p.name}</span>
+              <span style={{ color: "var(--risk)" }}>{p.stock} left</span>
+            </div>
+          ))}
+        </div>
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+          <p className="text-xs text-[var(--text-soft)] mb-3">Best Sellers</p>
+          {inventory.bestSellers.slice(0, 5).map((p, i) => (
+            <div key={i} className="flex justify-between py-1.5 text-sm">
+              <span>{p.name}</span>
+              <span style={{ color: "var(--healthy)" }}>{p.quantitySold} sold</span>
+            </div>
+          ))}
+        </div>
       </div>
     </main>
   );

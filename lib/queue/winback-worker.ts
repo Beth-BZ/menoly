@@ -32,7 +32,7 @@ const worker = new Worker(
 
     console.log(`Email sent, id: ${data?.id}`);
   },
-  { connection: { host: "localhost", port: 6379 } }
+  { connection: { url: process.env.REDIS_URL || "radis://localhost:6379" } }
 );
 
 worker.on("completed", (job) => console.log(`Job ${job.id} completed`));
